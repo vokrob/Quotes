@@ -1,13 +1,20 @@
 package com.vokrob.quotes
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.vokrob.quotes.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private var interAd: InterstitialAd? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -16,12 +23,16 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         initAdMob()
+        binding.button.setOnClickListener {
+            showInterAd()
+        }
     }
 
     override fun onResume() {
         super.onResume()
 
         binding.adView.resume()
+        loadInterAd()
     }
 
     override fun onPause() {
@@ -41,6 +52,50 @@ class MainActivity : AppCompatActivity() {
 
         val adRequest = AdRequest.Builder().build()
         binding.adView.loadAd(adRequest)
+    }
+
+    private fun loadInterAd() {
+        val adRequest = AdRequest.Builder().build()
+        InterstitialAd.load(this, "ca-app-pub-3940256099942544/1033173712", adRequest,
+            object : InterstitialAdLoadCallback() {
+                override fun onAdFailedToLoad(p0: LoadAdError) {
+                    interAd = null
+                }
+
+                override fun onAdLoaded(ad: InterstitialAd) {
+                    interAd = ad
+                }
+            })
+    }
+
+    private fun showInterAd() {
+        if (interAd != null) {
+            interAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    showContent()
+                    interAd = null
+                    loadInterAd()
+                }
+
+                override fun onAdFailedToShowFullScreenContent(p0: AdError) {
+                    showContent()
+                    interAd = null
+                    loadInterAd()
+                }
+
+                override fun onAdShowedFullScreenContent() {
+                    interAd = null
+                    loadInterAd()
+                }
+            }
+            interAd?.show(this)
+        } else {
+            showContent()
+        }
+    }
+
+    private fun showContent() {
+        Toast.makeText(this, "Запуск контента", Toast.LENGTH_LONG).show()
     }
 }
 
