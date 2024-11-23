@@ -3,6 +3,7 @@ package com.vokrob.quotes
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
@@ -10,10 +11,13 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.vokrob.quotes.adapters.CategoryAdapter
+import com.vokrob.quotes.adapters.ContentManager
 import com.vokrob.quotes.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private var adapter: CategoryAdapter? = null
     private var interAd: InterstitialAd? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,12 +27,19 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         initAdMob()
-        (application as AppMainState).showAdIfAvailable(this) {
-            Toast.makeText(this, "Start app", Toast.LENGTH_LONG).show()
-        }
-        binding.button.setOnClickListener {
-            showInterAd()
-        }
+        (application as AppMainState).showAdIfAvailable(this) {}
+        initRcView()
+    }
+
+    private fun initRcView() = with(binding) {
+        adapter = CategoryAdapter()
+        rcViewCat.layoutManager = LinearLayoutManager(
+            this@MainActivity,
+            LinearLayoutManager.HORIZONTAL,
+            false
+        )
+        rcViewCat.adapter = adapter
+        adapter?.submitList(ContentManager.list)
     }
 
     override fun onResume() {
@@ -52,7 +63,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun initAdMob() {
         MobileAds.initialize(this)
-
         val adRequest = AdRequest.Builder().build()
         binding.adView.loadAd(adRequest)
     }
@@ -73,24 +83,26 @@ class MainActivity : AppCompatActivity() {
 
     private fun showInterAd() {
         if (interAd != null) {
-            interAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    showContent()
-                    interAd = null
-                    loadInterAd()
+            interAd?.fullScreenContentCallback =
+                object : FullScreenContentCallback() {
+                    override fun onAdDismissedFullScreenContent() {
+                        showContent()
+                        interAd = null
+                        loadInterAd()
+                    }
+
+                    override fun onAdFailedToShowFullScreenContent(p0: AdError) {
+                        showContent()
+                        interAd = null
+                        loadInterAd()
+                    }
+
+                    override fun onAdShowedFullScreenContent() {
+                        interAd = null
+                        loadInterAd()
+                    }
                 }
 
-                override fun onAdFailedToShowFullScreenContent(p0: AdError) {
-                    showContent()
-                    interAd = null
-                    loadInterAd()
-                }
-
-                override fun onAdShowedFullScreenContent() {
-                    interAd = null
-                    loadInterAd()
-                }
-            }
             interAd?.show(this)
         } else {
             showContent()
@@ -101,9 +113,6 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Запуск контента", Toast.LENGTH_LONG).show()
     }
 }
-
-
-
 
 
 
