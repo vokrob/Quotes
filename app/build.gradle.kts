@@ -47,8 +47,22 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
 
     implementation(libs.play.services.ads)
+    implementation(libs.androidx.lifecycle.process)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

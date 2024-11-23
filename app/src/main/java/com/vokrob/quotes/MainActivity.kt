@@ -23,6 +23,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         initAdMob()
+        (application as AppMainState).showAdIfAvailable(this) {
+            Toast.makeText(this, "Start app", Toast.LENGTH_LONG).show()
+        }
         binding.button.setOnClickListener {
             showInterAd()
         }
