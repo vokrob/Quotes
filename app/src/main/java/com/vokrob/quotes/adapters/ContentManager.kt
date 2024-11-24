@@ -2,7 +2,7 @@ package com.vokrob.quotes.adapters
 
 object ContentManager {
     val list = arrayListOf(
-        "Фразы философов",
+        "Цитаты философов",
         "Предсказания",
         "Мотивация",
         "Любовь",

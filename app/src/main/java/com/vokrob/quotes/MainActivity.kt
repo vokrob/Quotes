@@ -15,12 +15,14 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.vokrob.quotes.adapters.CategoryAdapter
 import com.vokrob.quotes.adapters.ContentManager
 import com.vokrob.quotes.databinding.ActivityMainBinding
+import kotlin.random.Random
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), CategoryAdapter.Listener {
     private lateinit var binding: ActivityMainBinding
     private var adapter: CategoryAdapter? = null
     private var interAd: InterstitialAd? = null
     private var timer: CountDownTimer? = null
+    private var posM: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +40,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initRcView() = with(binding) {
-        adapter = CategoryAdapter()
+        adapter = CategoryAdapter(this@MainActivity)
         rcViewCat.layoutManager = LinearLayoutManager(
             this@MainActivity,
             LinearLayoutManager.HORIZONTAL,
@@ -79,7 +81,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onFinish() {
-
+                getMessage()
             }
 
         }.start()
@@ -135,6 +137,22 @@ class MainActivity : AppCompatActivity() {
 
     private fun showContent() {
         Toast.makeText(this, "Запуск контента", Toast.LENGTH_LONG).show()
+    }
+
+    private fun getMessage() = with(binding) {
+        val currentArray = resources.getStringArray(MainConst.arrayList[posM])
+        val message = currentArray[Random.nextInt(currentArray.size)]
+        val messageList = message.split("|")
+
+        tvMessage.text = messageList[0]
+        tvName.text = messageList[1]
+
+        imageBg.setImageResource(MainConst.imageList[Random.nextInt(4)])
+    }
+
+    override fun onClick(pos: Int) {
+        posM = pos
+        getResult()
     }
 }
 
