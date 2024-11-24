@@ -1,7 +1,10 @@
 package com.vokrob.quotes
 
 import android.os.Bundle
-import android.os.CountDownTimer
+import android.view.View
+import android.view.animation.Animation
+import android.view.animation.Animation.AnimationListener
+import android.view.animation.AnimationUtils
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -21,22 +24,55 @@ class MainActivity : AppCompatActivity(), CategoryAdapter.Listener {
     private lateinit var binding: ActivityMainBinding
     private var adapter: CategoryAdapter? = null
     private var interAd: InterstitialAd? = null
-    private var timer: CountDownTimer? = null
-    private var posM: Int = 0
+    private var currentCategory: Int = -1
+    private var isAnimating: Boolean = false
+    private lateinit var inAnimation: Animation
+    private lateinit var outAnimation: Animation
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        initAnimations()
         initAdMob()
         (application as AppMainState).showAdIfAvailable(this) {}
         initRcView()
 
         binding.imageBg.setOnClickListener {
-            getResult()
+            if (currentCategory != -1 && !isAnimating) {
+                startNewMessageAnimation()
+            }
         }
+    }
+
+    private fun initAnimations() {
+        inAnimation = AnimationUtils.loadAnimation(this, R.anim.alpha_in)
+        outAnimation = AnimationUtils.loadAnimation(this, R.anim.alpha_out)
+
+        inAnimation.setAnimationListener(object : AnimationListener {
+            override fun onAnimationStart(animation: Animation?) {
+                isAnimating = true
+            }
+
+            override fun onAnimationEnd(animation: Animation?) {
+                isAnimating = false
+            }
+
+            override fun onAnimationRepeat(animation: Animation?) {}
+        })
+
+        outAnimation.setAnimationListener(object : AnimationListener {
+            override fun onAnimationStart(animation: Animation?) {
+                isAnimating = true
+            }
+
+            override fun onAnimationEnd(animation: Animation?) {
+                getMessage()
+            }
+
+            override fun onAnimationRepeat(animation: Animation?) {}
+        })
     }
 
     private fun initRcView() = with(binding) {
@@ -50,41 +86,57 @@ class MainActivity : AppCompatActivity(), CategoryAdapter.Listener {
         adapter?.submitList(ContentManager.list)
     }
 
+    private fun startNewMessageAnimation() {
+        if (!isAnimating) {
+            binding.apply {
+                tvMessage.startAnimation(outAnimation)
+                tvName.startAnimation(outAnimation)
+                imageBg.startAnimation(outAnimation)
+            }
+        }
+    }
+
+    private fun getMessage() = with(binding) {
+        val currentArray = resources.getStringArray(MainConst.arrayList[currentCategory])
+        val message = currentArray[Random.nextInt(currentArray.size)]
+        val messageList = message.split("|")
+
+        tvMessage.text = messageList[0]
+        tvName.text = messageList[1]
+        imageBg.setImageResource(MainConst.imageList[Random.nextInt(4)])
+
+        tvMessage.startAnimation(inAnimation)
+        tvName.startAnimation(inAnimation)
+        imageBg.startAnimation(inAnimation)
+    }
+
+    override fun onClick(pos: Int) {
+        if (!isAnimating) {
+            if (currentCategory == -1) {
+                currentCategory = pos
+                binding.cardView.visibility = View.VISIBLE
+                getMessage()
+            } else {
+                currentCategory = pos
+                startNewMessageAnimation()
+            }
+        }
+    }
+
     override fun onResume() {
         super.onResume()
-
         binding.adView.resume()
         loadInterAd()
     }
 
     override fun onPause() {
         super.onPause()
-
         binding.adView.pause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-
         binding.adView.destroy()
-    }
-
-    private fun getResult() {
-        var counter = 0
-        timer?.cancel()
-
-        timer = object : CountDownTimer(5000, 100) {
-            override fun onTick(p0: Long) {
-                counter++
-                if (counter > 3) counter = 0
-                binding.imageBg.setImageResource(MainConst.imageList[counter])
-            }
-
-            override fun onFinish() {
-                getMessage()
-            }
-
-        }.start()
     }
 
     private fun initAdMob() {
@@ -95,7 +147,10 @@ class MainActivity : AppCompatActivity(), CategoryAdapter.Listener {
 
     private fun loadInterAd() {
         val adRequest = AdRequest.Builder().build()
-        InterstitialAd.load(this, "ca-app-pub-3940256099942544/1033173712", adRequest,
+        InterstitialAd.load(
+            this,
+            "ca-app-pub-3940256099942544/1033173712",
+            adRequest,
             object : InterstitialAdLoadCallback() {
                 override fun onAdFailedToLoad(p0: LoadAdError) {
                     interAd = null
@@ -104,7 +159,8 @@ class MainActivity : AppCompatActivity(), CategoryAdapter.Listener {
                 override fun onAdLoaded(ad: InterstitialAd) {
                     interAd = ad
                 }
-            })
+            }
+        )
     }
 
     private fun showInterAd() {
@@ -128,7 +184,6 @@ class MainActivity : AppCompatActivity(), CategoryAdapter.Listener {
                         loadInterAd()
                     }
                 }
-
             interAd?.show(this)
         } else {
             showContent()
@@ -138,25 +193,7 @@ class MainActivity : AppCompatActivity(), CategoryAdapter.Listener {
     private fun showContent() {
         Toast.makeText(this, "Запуск контента", Toast.LENGTH_LONG).show()
     }
-
-    private fun getMessage() = with(binding) {
-        val currentArray = resources.getStringArray(MainConst.arrayList[posM])
-        val message = currentArray[Random.nextInt(currentArray.size)]
-        val messageList = message.split("|")
-
-        tvMessage.text = messageList[0]
-        tvName.text = messageList[1]
-
-        imageBg.setImageResource(MainConst.imageList[Random.nextInt(4)])
-    }
-
-    override fun onClick(pos: Int) {
-        posM = pos
-        getResult()
-    }
 }
-
-
 
 
 
